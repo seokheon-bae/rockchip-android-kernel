@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Pine64 RockPro64 (v2.1) for the TinkerBoard-Android Android 12 SDK
+ * (kernel 4.19, tinker_board_2-android12-3.0.10).
+ *
+ * Board hardware comes from rk3399-rockpro64.dts; this file only adds what
+ * the Rockchip Android userspace expects (rk3399-android.dtsi: fiq-debugger
+ * console, drm-logo/ramoops, firmware/android, VOPL, MPP, IEP, RGA ...) and
+ * the Rockchip-style (rfkill/bcmdhd) WiFi/BT description.
+ *
+ * Nothing here is taken from rk3399-tinker-board-2.dtsi's PMIC/OPP sections:
+ * that board leaves vdd_cpu_b/vdd_gpu unmanaged and adds 1.512/2.016 GHz OPPs.
+ */
+
+#include "rk3399-rockpro64.dts"
+#include "rk3399-android.dtsi"
+
+/ {
+	model = "Pine64 RockPro64 (Android)";
+	compatible = "pine64,rockpro64-v2.1", "pine64,rockpro64",
+		     "rockchip,android", "rockchip,rk3399";
+
+	chosen: chosen {
+		/* same command line as rk3399-tinker-board-2.dts */
+		bootargs = "earlycon=uart8250,mmio32,0xff1a0000 console=ttyFIQ0 androidboot.baseband=N/A androidboot.veritymode=enforcing androidboot.hardware=rk30board androidboot.console=ttyFIQ0 init=/init initrd=0x62000001,0x00800000 coherent_pool=1m";
+		/delete-property/ stdout-path;
+	};
+
+	/*
+	 * Optional PINE64 WiFi/BT module (AzureWave AW-CM256SM, BCM4345 rev 6).
+	 * bcmdhd recognised it with the AP6255 firmware in the Yocto bring-up.
+	 * Pin assignment as in mainline rk3399-rockpro64.dtsi:
+	 *   WL_REG_ON  GPIO0_B2 (sdio_pwrseq reset-gpios)
+	 *   WL_HOST_WAKE GPIO0_A3 (not described in mainline - verify)
+	 *   BT_REG_ON  GPIO0_B1, BT_HOST_WAKE GPIO0_A4, BT_WAKE GPIO2_D3
+	 *   UART0 RTS  GPIO2_C3 (uart0_gpios, already in rk3399-rockpro64.dts)
+	 */
+	wireless-wlan {
+		compatible = "wlan-platdata";
+		rockchip,grf = <&grf>;
+		wifi_chip_type = "ap6255";
+		sdio_vref = <1800>;
+		WIFI,host_wake_irq = <&gpio0 RK_PA3 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
+	wireless-bluetooth {
+		compatible = "bluetooth-platdata";
+		clocks = <&rk808 1>;
+		clock-names = "ext_clock";
+		uart_rts_gpios = <&gpio2 RK_PC3 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "rts_gpio";
+		pinctrl-0 = <&uart0_rts>;
+		pinctrl-1 = <&uart0_gpios>;
+		BT,reset_gpio    = <&gpio0 RK_PB1 GPIO_ACTIVE_HIGH>;
+		BT,wake_gpio     = <&gpio2 RK_PD3 GPIO_ACTIVE_HIGH>;
+		BT,wake_host_irq = <&gpio0 RK_PA4 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+};
+
+/*
+ * UART2 belongs to the fiq-debugger (ttyFIQ0). 115200 to match the U-Boot
+ * built from tinker_board_2_defconfig (CONFIG_BAUDRATE=115200).
+ * The baud clock is parented to xin24m: the reset default
+ * (clk_uart2_div <- clk_uart_src <- CPLL) garbled the console early in boot
+ * on the FriendlyELEC 4.19 bring-up.
+ */
+&fiq_debugger {
+	rockchip,baudrate = <115200>;
+	assigned-clocks = <&cru SCLK_UART2>;
+	assigned-clock-parents = <&xin24m>;
+};
+
+/* gpio-keys from rk3399-android.dtsi owns the power key (GPIO0_A5) */
+&rk_key {
+	status = "disabled";
+};
+
+/* rk3399-android.dtsi disables these; RockPro64 has HDMI on VOPB */
+&route_hdmi {
+	status = "okay";
+};
+
+&hdmi_dp_sound {
+	status = "okay";
+};
+
+/* Bluetooth UART (RTS is handled by wireless-bluetooth) */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_xfer &uart0_cts>;
+	status = "okay";
+};

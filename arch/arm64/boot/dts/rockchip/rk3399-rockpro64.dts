@@ -247,36 +247,46 @@
 };
 
 &dfi {
-	status = "okay";
+	status = "disabled";
 };
 
+/*
+ * RockPro64 uses LPDDR4. The original table here was for LPDDR3/DDR3
+ * (400/800 MHz) and caused "Get wrong frequency, Request 800000000,
+ * Current 856000000". The LPDDR4 table below is the one used by the
+ * Tinker Board 2 (also LPDDR4); DDR DVFS stays disabled (DDR fixed at the
+ * loader frequency, 856 MHz) until it has been validated on this board.
+ */
 &dmc {
-	status = "okay";
+	status = "disabled";
 	center-supply = <&vdd_center>;
 	upthreshold = <40>;
 	downdifferential = <20>;
 	system-status-freq = <
 		/*system status         freq(KHz)*/
-		SYS_STATUS_NORMAL       800000
-		SYS_STATUS_REBOOT       400000
-		SYS_STATUS_SUSPEND      400000
-		SYS_STATUS_VIDEO_1080P  400000
-		SYS_STATUS_VIDEO_4K     800000
-		SYS_STATUS_VIDEO_4K_10B 800000
-		SYS_STATUS_PERFORMANCE  800000
-		SYS_STATUS_BOOST        400000
-		SYS_STATUS_DUALVIEW     800000
-		SYS_STATUS_ISP          800000
+		SYS_STATUS_NORMAL       856000
+		SYS_STATUS_REBOOT       416000
+		SYS_STATUS_SUSPEND      416000
+		SYS_STATUS_VIDEO_1080P  856000
+		SYS_STATUS_VIDEO_4K     856000
+		SYS_STATUS_VIDEO_4K_10B 856000
+		SYS_STATUS_PERFORMANCE  856000
+		SYS_STATUS_BOOST        856000
+		SYS_STATUS_DUALVIEW     856000
+		SYS_STATUS_ISP          856000
 	>;
 	vop-bw-dmc-freq = <
 	/* min_bw(MB/s) max_bw(MB/s) freq(KHz) */
-		0       577      200000
-		578     1701     300000
-		1702    99999    400000
+		0       577      416000
+		578     99999    856000
 	>;
-	auto-min-freq = <400000>;
-	auto-freq-en = <0>;
-
+	vop-pn-msch-readlatency = <
+	/* plane_number  readlatency */
+		0       0
+		4       0x20
+	>;
+	auto-min-freq = <416000>;
+	auto-freq-en = <1>;
 };
 
 &dmc_opp_table {
@@ -295,6 +305,11 @@
 	opp-400000000 {
 		opp-hz = /bits/ 64 <400000000>;
 		opp-microvolt = <900000>;
+		status = "disabled";
+	};
+	opp-416000000 {
+		opp-hz = /bits/ 64 <416000000>;
+		opp-microvolt = <1000000>;
 	};
 	opp-528000000 {
 		opp-hz = /bits/ 64 <528000000>;
@@ -309,6 +324,11 @@
 	opp-800000000 {
 		opp-hz = /bits/ 64 <800000000>;
 		opp-microvolt = <900000>;
+		status = "disabled";
+	};
+	opp-856000000 {
+		opp-hz = /bits/ 64 <856000000>;
+		opp-microvolt = <1000000>;
 	};
 	opp-928000000 {
 		opp-hz = /bits/ 64 <928000000>;
@@ -404,8 +424,8 @@
 	rk808: pmic@1b {
 		compatible = "rockchip,rk808";
 		reg = <0x1b>;
-		interrupt-parent = <&gpio1>;
-		interrupts = <21 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pmic_int_l>;
 		rockchip,system-power-controller;
@@ -476,6 +496,7 @@
 				regulator-name = "vcc1v8_dvp";
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
 					regulator-on-in-suspend;
@@ -599,10 +620,11 @@
 	i2c-scl-rising-time-ns = <168>;
 	i2c-scl-falling-time-ns = <4>;
 
-	es8316: es8316@10 {
+	/* RockPro64 v2.1: 0x11, v2.0: 0x10 */
+	es8316: es8316@11 {
 		#sound-dai-cells = <0>;
 		compatible = "everest,es8316";
-		reg = <0x10>;
+		reg = <0x11>;
 		clocks = <&cru SCLK_I2S_8CH_OUT>;
 		clock-names = "mclk";
 		pinctrl-names = "default";
@@ -666,8 +688,8 @@
 &io_domains {
 	status = "okay";
 
-	bt656-supply = <&vcc1v8_s0>; /* bt656_gpio2ab_ms */
-	audio-supply = <&vcc1v8_s0>; /* audio_gpio3d4a_ms */
+	bt656-supply = <&vcc1v8_dvp>; /* bt656_gpio2ab_ms */
+	audio-supply = <&vcc_3v0>; /* audio_gpio3d4a_ms */
 	sdmmc-supply = <&vcc_sd>; /* sdmmc_gpio4b_ms */
 	gpio1830-supply = <&vcc_3v0>; /* gpio1833_gpio4cd_ms */
 };
@@ -713,7 +735,7 @@
 &sdhci {
 	bus-width = <8>;
 	mmc-hs200-1_8v;
-	mmc-hs400-1_8v;
+	non-removable;
 	keep-power-in-suspend;
 	status = "okay";
 };
@@ -965,7 +987,7 @@
 	pmic {
 		pmic_int_l: pmic-int-l {
 			rockchip,pins =
-				<1 RK_PC5 RK_FUNC_GPIO &pcfg_pull_up>;
+				<3 RK_PB2 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 
 		vsel1_gpio: vsel1-gpio {
@@ -1076,7 +1098,7 @@
 	num-lanes = <4>;
 	max-link-speed = <2>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie_clkreqn>;
+	pinctrl-0 = <&pcie_clkreqn_cpm>;
 	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
 };
@@ -1114,11 +1136,15 @@
 		<&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
 };
 
-&vdec_mmu {
+&rkvdec_mmu {
 	status = "okay";
 };
 
-&vpu {
+&vdpu {
+	status = "okay";
+};
+
+&vepu {
 	status = "okay";
 };
 
