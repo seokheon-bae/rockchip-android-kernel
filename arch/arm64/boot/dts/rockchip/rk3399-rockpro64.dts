@@ -95,6 +95,14 @@
 		regulator-name = "vdd_log";
 		regulator-min-microvolt = <800000>;
 		regulator-max-microvolt = <1400000>;
+		/*
+		 * The Tinker Board 2 U-Boot leaves PWM2 at 84% duty (polarity
+		 * not inverted), read here as 1304 mV, instead of ~16% (896 mV,
+		 * as left by the Pine64 Android 9 loader; mainline/Armbian reads
+		 * the same duty as 944 mV). With that vdd_log the A72 cluster
+		 * crashed below ~950 mV at 816 MHz. Program 900 mV at probe.
+		 */
+		regulator-init-microvolt = <900000>;
 		regulator-always-on;
 		regulator-boot-on;
 
