@@ -632,6 +632,18 @@ static int __init psci_0_2_init(struct device_node *np)
 	 */
 	err = psci_probe();
 
+	/*
+	 * Some boards cannot be warm-reset through PSCI SYSTEM_RESET with the
+	 * firmware they run (e.g. Pine64 RockPro64 with the Tinker Board 2
+	 * rkbin BL31: the board never comes back). Leave arm_pm_restart unset
+	 * so machine_restart() falls back to the restart handler chain
+	 * (on Rockchip: CRU first global reset from the clock driver).
+	 */
+	if (!err && of_property_read_bool(np, "rockchip,skip-psci-system-reset")) {
+		pr_info("SYSTEM_RESET not used (rockchip,skip-psci-system-reset)\n");
+		arm_pm_restart = NULL;
+	}
+
 out_put_node:
 	of_node_put(np);
 	return err;
