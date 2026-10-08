@@ -331,6 +331,7 @@ static int pwm_regulator_probe(struct platform_device *pdev)
 	struct regulator_config config = { };
 	struct device_node *np = pdev->dev.of_node;
 	enum gpiod_flags gpio_flags;
+	u32 init_uV;
 	int ret;
 
 	if (!np) {
@@ -391,6 +392,31 @@ static int pwm_regulator_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to register regulator %s: %d\n",
 			drvdata->desc.name, ret);
 		return ret;
+	}
+
+	/*
+	 * Continuous mode only: program a known voltage at probe instead of
+	 * keeping whatever duty cycle the bootloader left. The constraints
+	 * double as the duty <-> voltage mapping here, so "regulator-min/
+	 * max-microvolt" cannot be used to force a value.
+	 */
+	if (!of_find_property(np, "voltage-table", NULL) &&
+	    !of_property_read_u32(np, "regulator-init-microvolt", &init_uV)) {
+		unsigned int selector;
+
+		if ((int)init_uV < regulator->constraints->min_uV ||
+		    (int)init_uV > regulator->constraints->max_uV) {
+			dev_warn(&pdev->dev, "init voltage %u uV out of range\n",
+				 init_uV);
+		} else {
+			dev_info(&pdev->dev, "%duV (bootloader) -> %uuV\n",
+				 pwm_regulator_get_voltage(regulator), init_uV);
+			ret = pwm_regulator_set_voltage(regulator, init_uV,
+							init_uV, &selector);
+			if (ret)
+				dev_err(&pdev->dev,
+					"failed to set init voltage: %d\n", ret);
+		}
 	}
 
 	return 0;
