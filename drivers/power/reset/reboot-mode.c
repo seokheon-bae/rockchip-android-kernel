@@ -78,6 +78,18 @@ static int reboot_mode_notify(struct notifier_block *this,
 	return NOTIFY_DONE;
 }
 
+static int reboot_mode_pre_restart_notify(struct notifier_block *this,
+					  unsigned long mode, void *cmd)
+{
+	struct reboot_mode_driver *reboot;
+
+	reboot = container_of(this, struct reboot_mode_driver,
+			      pre_restart_notifier);
+	reboot_mode_write(reboot, cmd);
+
+	return NOTIFY_DONE;
+}
+
 static int reboot_mode_panic_notify(struct notifier_block *this,
 				      unsigned long ev, void *ptr)
 {
@@ -156,8 +168,18 @@ int reboot_mode_register(struct reboot_mode_driver *reboot)
 	boot_mode_parse(reboot);
 	reboot->reboot_notifier.notifier_call = reboot_mode_notify;
 	reboot->panic_notifier.notifier_call = reboot_mode_panic_notify;
+	reboot->pre_restart_notifier.notifier_call =
+					reboot_mode_pre_restart_notify;
 	register_reboot_notifier(&reboot->reboot_notifier);
-	register_pre_restart_handler(&reboot->reboot_notifier);
+	/*
+	 * A notifier_block can only be on one chain: its ->next links that
+	 * chain. Registering reboot_notifier on the pre-restart chain as well
+	 * spliced the (blocking) reboot notifier list into the atomic
+	 * pre-restart chain, so machine_restart() ran reboot notifiers such
+	 * as heartbeat_reboot_notifier() -> cancel_work_sync() with IRQs off
+	 * and the secondary CPUs stopped, and hung before the reset.
+	 */
+	register_pre_restart_handler(&reboot->pre_restart_notifier);
 	atomic_notifier_chain_register(&panic_notifier_list,
 				       &reboot->panic_notifier);
 	ret = sysfs_create_file(kernel_kobj, &kobj_boot_mode.attr);
@@ -181,6 +203,9 @@ int reboot_mode_unregister(struct reboot_mode_driver *reboot)
 	struct mode_info *info;
 
 	unregister_reboot_notifier(&reboot->reboot_notifier);
+	unregister_pre_restart_handler(&reboot->pre_restart_notifier);
+	atomic_notifier_chain_unregister(&panic_notifier_list,
+					 &reboot->panic_notifier);
 
 	list_for_each_entry(info, &reboot->head, list)
 		kfree_const(info->mode);

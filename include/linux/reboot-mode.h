@@ -9,6 +9,7 @@ struct reboot_mode_driver {
 	int (*read)(struct reboot_mode_driver *reboot);
 	struct notifier_block reboot_notifier;
 	struct notifier_block panic_notifier;
+	struct notifier_block pre_restart_notifier;
 };
 
 int reboot_mode_register(struct reboot_mode_driver *reboot);
