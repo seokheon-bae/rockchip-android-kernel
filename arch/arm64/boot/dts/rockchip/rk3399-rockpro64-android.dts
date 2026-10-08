@@ -27,6 +27,20 @@
 	};
 
 	/*
+	 * ASUS drivers/boardinfo: stmmac/dwmac-rk call get_board_model(), which
+	 * strcmp()s the "model" string read from this node (NULL without it ->
+	 * Oops in stmmac_probe_config_dt). A model other than rk3288/rk3399/
+	 * rk3568/rk3566 makes get_board_model() return -1: no Tinker hw-id GPIO
+	 * probing and no Tinker-specific RGMII delay/WOL overrides (the DTS
+	 * tx_delay/rx_delay are used).
+	 */
+	board-info {
+		compatible = "board-info";
+		model = "rockpro64";
+		board = "rockpro64";
+	};
+
+	/*
 	 * RockPro64 "Recover" button on SARADC_IN1 (pulled up to 1.8 V, pressed =
 	 * 0 V), as in mainline rk3399-rockpro64.dtsi.
 	 *
