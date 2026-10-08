@@ -27,6 +27,32 @@
 	};
 
 	/*
+	 * RockPro64 "Recover" button on SARADC_IN1 (pulled up to 1.8 V, pressed =
+	 * 0 V), as in mainline rk3399-rockpro64.dtsi.
+	 *
+	 * Rockchip U-Boot uses KEY_VOLUMEUP as its recovery/download key and looks
+	 * for it in the kernel DTB first. When the kernel DTB has none, it falls
+	 * back to its own rk3399-evb DT keys (rk_key0: SARADC ch1, rk_key1: SARADC
+	 * ch2 for RK3399PRO EVB), whose ADC level reads as "pressed" on RockPro64:
+	 * "download key pressed... entering recovery mode!" on every boot.
+	 * Mapping the Recover button to KEY_VOLUMEUP gives U-Boot a real key.
+	 * (The kernel does not use this node: CONFIG_KEYBOARD_ADC is off.)
+	 */
+	adc-keys {
+		compatible = "adc-keys";
+		io-channels = <&saradc 1>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+
+		recovery-key {
+			label = "Recovery";
+			linux,code = <KEY_VOLUMEUP>;
+			press-threshold-microvolt = <18000>;
+		};
+	};
+
+	/*
 	 * Optional PINE64 WiFi/BT module (AzureWave AW-CM256SM, BCM4345 rev 6).
 	 * bcmdhd recognised it with the AP6255 firmware in the Yocto bring-up.
 	 * Pin assignment as in mainline rk3399-rockpro64.dtsi:
