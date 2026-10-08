@@ -247,19 +247,6 @@
 };
 
 /*
- * Warm reboot: PSCI SYSTEM_RESET (BL31) and CRU second global reset
- * (GLB_SRST_SND, 0xeca8) both leave the board dead (no "DDR Version"),
- * while CRU first global reset (GLB_SRST_FST, 0xfdb9, written with devmem
- * from Android) reboots it. Skip PSCI SYSTEM_RESET so the kernel uses the
- * clk-rk3399 restart handler (GLB_SRST_FST).
- */
-/ {
-	psci {
-		rockchip,skip-psci-system-reset;
-	};
-};
-
-/*
  * A72 (vdd_cpu_b, SYR827 @0x40) needs ~75-100 mV more than the Rockchip
  * rk3399-opp.dtsi table on this board (measured with i2cset on VSEL0):
  *   816 MHz: 900 mV ok, 875 mV -> Oops (table: 825 mV)
