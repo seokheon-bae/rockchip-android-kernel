@@ -254,6 +254,19 @@
 	cpu-supply = <&vdd_cpu_b>;
 };
 
+/*
+ * Warm reboot: PSCI SYSTEM_RESET (Tinker Board 2 rkbin BL31) and CRU second
+ * global reset (GLB_SRST_SND, 0xeca8) leave the board dead (no
+ * "DDR Version"), while CRU first global reset (GLB_SRST_FST, 0xfdb9,
+ * written with devmem from Android) reboots it. Skip PSCI SYSTEM_RESET so
+ * the kernel uses the clk-rk3399 restart handler (GLB_SRST_FST).
+ */
+/ {
+	psci {
+		rockchip,skip-psci-system-reset;
+	};
+};
+
 &dfi {
 	status = "disabled";
 };
