@@ -122,7 +122,17 @@
 	status = "okay";
 };
 
+/*
+ * "rockchip,rk3399-hdmi-dp" (4.4 machine driver) is not built in this
+ * 4.19 kernel, so this card never registers (only the ES8316 card shows in
+ * the ALSA list). Use the simple-audio-card HDMI card from rk3399.dtsi
+ * (i2s2 <-> dw-hdmi), as the Tinker Board 2 does.
+ */
 &hdmi_dp_sound {
+	status = "disabled";
+};
+
+&hdmi_sound {
 	status = "okay";
 };
 

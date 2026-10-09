@@ -163,9 +163,14 @@
 		simple-audio-card,widgets =
 			"Microphone", "Mic Jack",
 			"Headphone", "Headphone Jack";
+		/*
+		 * Widget names of the 4.19 es8316 driver (MIC1/MIC2, "Mic Bias"
+		 * is reached through the codec's own routes). The 4.4-era
+		 * "MICBIAS1"/"IN1P" do not exist here. Mic on MIC2 as in mainline
+		 * rk3399-rockpro64.dtsi.
+		 */
 		simple-audio-card,routing =
-			"Mic Jack", "MICBIAS1",
-			"IN1P", "Mic Jack",
+			"MIC2", "Mic Jack",
 			"Headphone Jack", "HPOL",
 			"Headphone Jack", "HPOR";
 		simple-audio-card,cpu {
