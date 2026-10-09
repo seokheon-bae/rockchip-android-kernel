@@ -96,11 +96,11 @@
 		regulator-min-microvolt = <800000>;
 		regulator-max-microvolt = <1400000>;
 		/*
-		 * The Tinker Board 2 U-Boot leaves PWM2 at 84% duty (polarity
-		 * not inverted), read here as 1304 mV, instead of ~16% (896 mV,
-		 * as left by the Pine64 Android 9 loader; mainline/Armbian reads
-		 * the same duty as 944 mV). With that vdd_log the A72 cluster
-		 * crashed below ~950 mV at 816 MHz. Program 900 mV at probe.
+		 * U-Boot programs 900 mV (PWM2 DUTY 0xc1/0x4b7, inverted). Before
+		 * the pwm-rockchip get_state() polarity fix, pwm_adjust_config()
+		 * flipped it to 84% at probe (read as 1304 mV) and the A72 cluster
+		 * crashed below ~950 mV at 816 MHz. Keep programming 900 mV here
+		 * as well, so vdd_log does not depend on what the bootloader left.
 		 */
 		regulator-init-microvolt = <900000>;
 		regulator-always-on;
