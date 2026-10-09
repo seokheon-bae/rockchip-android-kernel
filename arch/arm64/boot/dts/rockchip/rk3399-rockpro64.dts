@@ -173,6 +173,16 @@
 		};
 		simple-audio-card,codec {
 			sound-dai = <&es8316>;
+			/*
+			 * es8316 rejects startup() while its sysclk is 0, but
+			 * simple-card only sets it in hw_params (mclk-fs), after
+			 * startup, and the codec's MCLK (SCLK_I2S_8CH_OUT) still
+			 * reads 0 Hz at card init: "No sysclk provided" /
+			 * "can't open codec ES8316 HiFi: -22" on every open.
+			 * Give an initial 256 * 48 kHz; hw_params then sets the
+			 * real rate * 256.
+			 */
+			system-clock-frequency = <12288000>;
 		};
 	};
 
