@@ -548,10 +548,20 @@
 				};
 			};
 
+			/*
+			 * SD card I/O supply (sdmmc vqmmc). Must stay on across a
+			 * warm reset: on MMC_POWER_OFF (shutdown, and ASUS
+			 * setmmcEmergency() on emergency_restart) dw_mmc disables
+			 * vqmmc, the RK808 keeps LDO4 off through the SoC reset and
+			 * the BootROM can no longer read the SD card - the board
+			 * stays dead after "reboot: Restarting system". Same as
+			 * vcc_sdio in mainline rk3399-rockpro64.dtsi.
+			 */
 			vcc_sd: LDO_REG4 {
 				regulator-name = "vcc_sd";
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
 					regulator-on-in-suspend;
