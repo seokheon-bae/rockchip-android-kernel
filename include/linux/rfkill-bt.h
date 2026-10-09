@@ -58,7 +58,6 @@ struct rfkill_rk_platform_data {
     char                    *name;
     enum rfkill_type        type;
     bool                    power_toggle;
-    bool                    keep_awake;     // never deassert BT_WAKE
     struct pinctrl          *pinctrl;
     struct rfkill_rk_gpio   poweron_gpio;
     struct rfkill_rk_gpio   reset_gpio;

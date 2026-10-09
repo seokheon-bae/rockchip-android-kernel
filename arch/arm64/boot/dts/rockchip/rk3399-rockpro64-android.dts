@@ -102,13 +102,6 @@
 		pinctrl-1 = <&uart0_gpios &bt_gpios>;
 		BT,reset_gpio    = <&gpio0 RK_PB1 GPIO_ACTIVE_HIGH>;
 		BT,wake_gpio     = <&gpio2 RK_PD3 GPIO_ACTIVE_HIGH>;
-		/*
-		 * After the controller has been asleep for minutes, the first
-		 * HCI command is lost although BT_WAKE and CTS are up
-		 * (0x0c1a/0xfd59 time out, stack restarts, BLE mouse drops).
-		 * Keep it awake.
-		 */
-		BT,keep_awake;
 		BT,wake_host_irq = <&gpio0 RK_PA4 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};

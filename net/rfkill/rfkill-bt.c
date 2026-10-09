@@ -486,13 +486,6 @@ static ssize_t bluesleep_write_proc_btwrite(struct file *file,
 		return -EFAULT;
 
 	DBG("btwrite %c\n", b);
-	/*
-	 * keep-awake: the controller is never allowed to sleep. On boards
-	 * where the first HCI command after a long sleep is lost even though
-	 * BT_WAKE and CTS come up, this keeps the link usable with LPM on.
-	 */
-	if (g_rfkill && g_rfkill->pdata->keep_awake)
-		b = '1';
 	/* HCI_DEV_WRITE */
 	if (b != '0')
 		rfkill_rk_sleep_bt(BT_WAKEUP);
@@ -521,10 +514,6 @@ static int bluetooth_platdata_parse_dt(struct device *dev,
 	} else {
 		data->power_toggle = false;
 	}
-
-	data->keep_awake = of_property_read_bool(node, "BT,keep_awake");
-	if (data->keep_awake)
-		LOG("%s: BT_WAKE stays asserted (BT,keep_awake)\n", __func__);
 
 	gpio = of_get_named_gpio_flags(node, "uart_rts_gpios", 0, &flags);
 	if (gpio_is_valid(gpio)) {
