@@ -103,9 +103,17 @@ static void rockchip_pwm_get_state(struct pwm_chip *chip,
 		state->enabled = ((val & enable_conf) == enable_conf) ?
 				 true : false;
 
-	if (pc->data->supports_polarity) {
+	/*
+	 * Report the polarity actually programmed. Always returning NORMAL made
+	 * pwm_adjust_config() (pwm-regulator probe) see a polarity change for
+	 * every "inverted" PWM left enabled by the bootloader and replace the
+	 * duty cycle with period - duty: on RockPro64 vdd_log (PWM2, inverted)
+	 * went from 16% (~900 mV, set by U-Boot) to 84% at probe.
+	 */
+	if (pc->data->supports_polarity && !(val & PWM_DUTY_POSITIVE))
+		state->polarity = PWM_POLARITY_INVERSED;
+	else
 		state->polarity = PWM_POLARITY_NORMAL;
-	}
 
 	clk_disable(pc->pclk);
 }
