@@ -90,8 +90,16 @@
 		clock-names = "ext_clock";
 		uart_rts_gpios = <&gpio2 RK_PC3 GPIO_ACTIVE_LOW>;
 		pinctrl-names = "default", "rts_gpio";
-		pinctrl-0 = <&uart0_rts>;
-		pinctrl-1 = <&uart0_gpios>;
+		/*
+		 * bt_gpios is part of both states: rfkill-bt only gpio_request()s
+		 * these pins, and the Rockchip 4.19 GPIO driver does not switch
+		 * the iomux to GPIO. GPIO0_B1 stayed on function 1 (PMUGRF
+		 * GPIO0B_IOMUX = 0x4), so BT_REG_ON never went low and the chip
+		 * kept the patched firmware at 1.5 Mbps across rfkill off/on -
+		 * only the first enable after boot worked.
+		 */
+		pinctrl-0 = <&uart0_rts &bt_gpios>;
+		pinctrl-1 = <&uart0_gpios &bt_gpios>;
 		BT,reset_gpio    = <&gpio0 RK_PB1 GPIO_ACTIVE_HIGH>;
 		BT,wake_gpio     = <&gpio2 RK_PD3 GPIO_ACTIVE_HIGH>;
 		BT,wake_host_irq = <&gpio0 RK_PA4 GPIO_ACTIVE_HIGH>;
@@ -141,4 +149,18 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_xfer &uart0_cts>;
 	status = "okay";
+};
+
+&pinctrl {
+	wireless-bluetooth {
+		bt_gpios: bt-gpios {
+			rockchip,pins =
+				/* BT_REG_ON */
+				<0 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>,
+				/* BT_HOST_WAKE */
+				<0 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>,
+				/* BT_WAKE */
+				<2 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
